@@ -5,7 +5,8 @@ from selenium import webdriver
 import urllib.parse
 import requests
 
-import websocket
+import websockets
+import asyncio
 
 def connect_proxmox():
     for host in proxmox_hosts:
@@ -31,8 +32,8 @@ def node(search_id):
     return None
 
 proxmox_hosts = ['proxmox03-nrh.csh.rit.edu','proxmox01-nrh.csh.rit.edu','proxmox02-nrh.csh.rit.edu']
-proxmox_user = 'username goes here@csh.rit.edu'
-proxmox_pass = 'password goes here'
+proxmox_user = 
+proxmox_pass = 
 
 proxmox = connect_proxmox()
 
@@ -40,7 +41,7 @@ node='proxmox01-nrh'
 burger_king_foot_lettuce=urllib.parse.quote_plus('&')
 search_id = 132
 
-def try_with_password():
+async def try_with_password():
     data = {"username": proxmox_user, "password": proxmox_pass}
     response_data = requests.post(
         "https://proxmox01-nrh.csh.rit.edu:8006/" + "api2/json/access/ticket",
@@ -83,13 +84,7 @@ def try_with_password():
     vnc_password = vncproxy_response_data['password']
     webbed_vnc_ticket=urllib.parse.quote_plus(vnc_ticket)
 
-    ws = websocket.WebSocketApp(f'wss://proxmox01-nrh.csh.rit.edu/api2/json/nodes/{node}/qemu/{search_id}/vncwebsocket?vncticket={webbed_vnc_ticket}&port={vnc_port}',
-                        #   on_message = print("message"),
-                        #   on_error = print("fuck."),
-                        #   on_close = print("close"),
-                          on_data = print("got data"),
-                          cookie = f"PVEAuthCookie={ticket};"
-    )
-    ws.run_forever()
+    async with websockets.connect(f'wss://proxmox01-nrh.csh.rit.edu/api2/json/nodes/{node}/qemu/{search_id}/vncwebsocket?vncticket={webbed_vnc_ticket}&port={vnc_port}', extra_headers={"Cookie": f"PVEAuthCookie={ticket}"}):
+        await asyncio.Future() # run forever
 
-try_with_password()
+asyncio.run(try_with_password())
