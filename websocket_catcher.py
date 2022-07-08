@@ -47,7 +47,7 @@ node='proxmox03-nrh'
 burger_king_foot_lettuce=urllib.parse.quote_plus('&')
 search_id = 131
 
-def try_with_password():
+def main():
     data = {"username": proxmox_user, "password": proxmox_pass}
     response_data = requests.post(
         "https://proxmox01-nrh.csh.rit.edu:8006/" + "api2/json/access/ticket",
@@ -58,17 +58,11 @@ def try_with_password():
         raise AuthenticationError(
             "Could not authenticate against `ticket` endpoint! Check uname/password"
         )
-
-    # print(f"response data (tell me ur secrets) {response_data}")
-
     csrf_prevention_token = response_data['CSRFPreventionToken']
     webbed_csrf_prevention_token = urllib.parse.quote_plus(csrf_prevention_token)
     
     ticket = response_data['ticket']
     webbed_ticket = urllib.parse.quote(ticket)
-
-    # perm = requests.get("https://proxmox01-nrh.csh.rit.edu:8006/api2/json/access/permissions",cookies={"PVEAuthCookie": webbed_ticket})
-    # print(f"{perm.status_code} | {perm.text}")
 
     proxy_params = {"node": node, "vmid": str(search_id), "websocket": '1', "generate-password": '0'}
 
@@ -85,7 +79,6 @@ def try_with_password():
 
     vnc_ticket = vncproxy_response_data['ticket']
     vnc_port = vncproxy_response_data['port']
-    # vnc_password = vncproxy_response_data['password']
     webbed_vnc_ticket=urllib.parse.quote_plus(vnc_ticket)
 
     print(f"Port: {vnc_port}\nTICKET\n{vnc_ticket}")
@@ -95,10 +88,13 @@ def try_with_password():
             "Could not authenticate against `vncproxy` endpoint!"
         )
 
-    subprocess.Popen(["/Users/willard.nilges/Code/novnc/utils/novnc_proxy", "--vnc", f"proxmox01-nrh.csh.rit.edu:{vnc_port}"])
+    # TODO: Find a way to kill after a few hours, to clean up proxies.
+    # Or use websockify file.
+    novnc_proxy = subprocess.Popen(["/Users/willard.nilges/Code/novnc/utils/novnc_proxy", "--vnc", f"proxmox01-nrh.csh.rit.edu:{vnc_port}"])
 
     time.sleep(3)
 
     browser.get(f"http://localhost:6080/vnc.html?host=localhost&port=6080&autoconnect=true&password={webbed_vnc_ticket}")
-    
-try_with_password()
+
+if __name__ == '__main__':
+    main()
