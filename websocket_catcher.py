@@ -54,7 +54,7 @@ def try_with_password():
             "Could not authenticate against `ticket` endpoint! Check uname/password"
         )
 
-    print(f"response data (tell me ur secrets) {response_data}")
+    # print(f"response data (tell me ur secrets) {response_data}")
 
     csrf_prevention_token = response_data['CSRFPreventionToken']
     webbed_csrf_prevention_token = urllib.parse.quote_plus(csrf_prevention_token)
@@ -65,23 +65,37 @@ def try_with_password():
     # perm = requests.get("https://proxmox01-nrh.csh.rit.edu:8006/api2/json/access/permissions",cookies={"PVEAuthCookie": webbed_ticket})
     # print(f"{perm.status_code} | {perm.text}")
 
-    proxy_params = {"node": node, "vmid": str(search_id), "websocket": '1', "generate-password": '1'}
+    proxy_params = {"node": node, "vmid": str(search_id), "websocket": '1', "generate-password": '0'}
 
     vncproxy_response_data = requests.post(
-        "https://proxmox03-nrh.csh.rit.edu:8006" + f"/api2/json/nodes/{node}/qemu/{search_id}/vncproxy",
+        "https://proxmox01-nrh.csh.rit.edu:8006" + f"/api2/json/nodes/{node}/qemu/{search_id}/vncproxy",
         verify=False,
+        timeout=5,
         params=proxy_params,
         headers={"CSRFPreventionToken": csrf_prevention_token},
         cookies={"PVEAuthCookie": ticket}
     ).json()["data"]
-    
+
+    print("\nVNCPROXY\n")
+
+    vnc_ticket = vncproxy_response_data['ticket']
+    vnc_port = vncproxy_response_data['port']
+    # vnc_password = vncproxy_response_data['password']
+    webbed_vnc_ticket=urllib.parse.quote_plus(vnc_ticket)
+
+    print(vncproxy_response_data)
+
     if response_data is None:
         raise AuthenticationError(
             "Could not authenticate against `vncproxy` endpoint!"
         )
-
-    print()
-    print(vncproxy_response_data["port"])
+    # print("\nVNCWEBSOCKET\n")
+    # status = vncwebsocket_response_data.status_code
+    # print(status)
+    # if status == 200:
+    #     print(vncwebsocket_response_data.json()["data"]["port"])
+    # else:
+    #     print(vncwebsocket_response_data.content)
     # vnc_ticket = vncproxy_response_data['ticket']
     # vnc_port = vncproxy_response_data['port']
     # vnc_password = vncproxy_response_data['password']
