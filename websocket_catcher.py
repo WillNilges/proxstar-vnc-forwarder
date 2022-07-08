@@ -74,6 +74,10 @@ def main():
         headers={"CSRFPreventionToken": csrf_prevention_token},
         cookies={"PVEAuthCookie": ticket}
     ).json()["data"]
+    if vncproxy_response_data is None:
+        raise AuthenticationError(
+            "Could not authenticate against `vncproxy` endpoint!"
+        )
 
     print("\nVNCPROXY\n")
 
@@ -82,11 +86,6 @@ def main():
     webbed_vnc_ticket=urllib.parse.quote_plus(vnc_ticket)
 
     print(f"Port: {vnc_port}\nTICKET\n{vnc_ticket}")
-
-    if response_data is None:
-        raise AuthenticationError(
-            "Could not authenticate against `vncproxy` endpoint!"
-        )
 
     # TODO: Find a way to kill after a few hours, to clean up proxies.
     # Or use websockify file.
