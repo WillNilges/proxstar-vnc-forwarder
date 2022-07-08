@@ -83,7 +83,7 @@ def try_with_password():
     # vnc_password = vncproxy_response_data['password']
     webbed_vnc_ticket=urllib.parse.quote_plus(vnc_ticket)
 
-    print(vncproxy_response_data)
+    print(f"Port: {vnc_port}\nTICKET\n{vnc_ticket}")
 
     if response_data is None:
         raise AuthenticationError(
