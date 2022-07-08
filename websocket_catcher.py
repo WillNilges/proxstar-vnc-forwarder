@@ -6,8 +6,13 @@ import requests
 
 import websockets
 import asyncio
+import subprocess
 
 import secrets
+import time
+
+from selenium import webdriver
+browser = webdriver.Chrome()
 
 def connect_proxmox():
     for host in proxmox_hosts:
@@ -89,18 +94,11 @@ def try_with_password():
         raise AuthenticationError(
             "Could not authenticate against `vncproxy` endpoint!"
         )
-    # print("\nVNCWEBSOCKET\n")
-    # status = vncwebsocket_response_data.status_code
-    # print(status)
-    # if status == 200:
-    #     print(vncwebsocket_response_data.json()["data"]["port"])
-    # else:
-    #     print(vncwebsocket_response_data.content)
-    # vnc_ticket = vncproxy_response_data['ticket']
-    # vnc_port = vncproxy_response_data['port']
-    # vnc_password = vncproxy_response_data['password']
-    # webbed_vnc_ticket=urllib.parse.quote_plus(vnc_ticket)
 
+    subprocess.Popen(["/Users/willard.nilges/Code/novnc/utils/novnc_proxy", "--vnc", f"proxmox01-nrh.csh.rit.edu:{vnc_port}"])
 
+    time.sleep(3)
 
+    browser.get(f"http://localhost:6080/vnc.html?host=localhost&port=6080&autoconnect=true&password={webbed_vnc_ticket}")
+    
 try_with_password()
