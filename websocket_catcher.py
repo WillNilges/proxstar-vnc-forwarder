@@ -1,12 +1,13 @@
 from proxmoxer import ProxmoxAPI
 import json
 from http import client as httplib
-from selenium import webdriver
 import urllib.parse
 import requests
 
 import websockets
 import asyncio
+
+import secrets
 
 def connect_proxmox():
     for host in proxmox_hosts:
@@ -32,21 +33,20 @@ def node(search_id):
     return None
 
 proxmox_hosts = ['proxmox03-nrh.csh.rit.edu','proxmox01-nrh.csh.rit.edu','proxmox02-nrh.csh.rit.edu']
-proxmox_user = 
-proxmox_pass = 
+proxmox_user = secrets.USER
+proxmox_pass = secrets.PASS
 
 proxmox = connect_proxmox()
 
-node='proxmox01-nrh'
+node='proxmox03-nrh'
 burger_king_foot_lettuce=urllib.parse.quote_plus('&')
-search_id = 132
+search_id = 131
 
-async def try_with_password():
+def try_with_password():
     data = {"username": proxmox_user, "password": proxmox_pass}
     response_data = requests.post(
         "https://proxmox01-nrh.csh.rit.edu:8006/" + "api2/json/access/ticket",
         verify=False,
-        timeout=5,
         data=data,
     ).json()["data"]
     if response_data is None:
@@ -62,29 +62,31 @@ async def try_with_password():
     ticket = response_data['ticket']
     webbed_ticket = urllib.parse.quote(ticket)
 
+    # perm = requests.get("https://proxmox01-nrh.csh.rit.edu:8006/api2/json/access/permissions",cookies={"PVEAuthCookie": webbed_ticket})
+    # print(f"{perm.status_code} | {perm.text}")
+
     proxy_params = {"node": node, "vmid": str(search_id), "websocket": '1', "generate-password": '1'}
 
     vncproxy_response_data = requests.post(
-        "https://proxmox01-nrh.csh.rit.edu:8006" + f"/api2/json/nodes/{node}/qemu/{search_id}/vncproxy",
+        "https://proxmox03-nrh.csh.rit.edu:8006" + f"/api2/json/nodes/{node}/qemu/{search_id}/vncproxy",
         verify=False,
-        timeout=5,
         params=proxy_params,
         headers={"CSRFPreventionToken": csrf_prevention_token},
         cookies={"PVEAuthCookie": ticket}
     ).json()["data"]
+    
     if response_data is None:
         raise AuthenticationError(
             "Could not authenticate against `vncproxy` endpoint!"
         )
 
-    print(vncproxy_response_data)
+    print()
+    print(vncproxy_response_data["port"])
+    # vnc_ticket = vncproxy_response_data['ticket']
+    # vnc_port = vncproxy_response_data['port']
+    # vnc_password = vncproxy_response_data['password']
+    # webbed_vnc_ticket=urllib.parse.quote_plus(vnc_ticket)
 
-    vnc_ticket = vncproxy_response_data['ticket']
-    vnc_port = vncproxy_response_data['port']
-    vnc_password = vncproxy_response_data['password']
-    webbed_vnc_ticket=urllib.parse.quote_plus(vnc_ticket)
 
-    async with websockets.connect(f'wss://proxmox01-nrh.csh.rit.edu/api2/json/nodes/{node}/qemu/{search_id}/vncwebsocket?vncticket={webbed_vnc_ticket}&port={vnc_port}', extra_headers={"Cookie": f"PVEAuthCookie={ticket}"}):
-        await asyncio.Future() # run forever
 
-asyncio.run(try_with_password())
+try_with_password()
